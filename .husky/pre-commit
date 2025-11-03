@@ -1,0 +1,59 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Get list of staged files
+staged_files=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+# Check if frontend files are staged
+frontend_files=$(echo "$staged_files" | grep "^Auto_QA-web/" || true)
+backend_files=$(echo "$staged_files" | grep "^Auto_QA-backend/" || true)
+
+# Process frontend files
+if [ -n "$frontend_files" ]; then
+  echo "🔍 Checking frontend files..."
+  cd Auto_QA-web
+  
+  # Check if husky and lint-staged are installed
+  if [ -f "package.json" ]; then
+    # Run frontend lint-staged
+    npx lint-staged
+    
+    if [ $? -ne 0 ]; then
+      echo "❌ Frontend checks failed. Commit blocked."
+      exit 1
+    fi
+    
+    # Stage any auto-fixed files
+    git add -u Auto_QA-web/
+  fi
+  
+  cd ..
+fi
+
+# Process backend files (if backend has lint-staged setup)
+if [ -n "$backend_files" ]; then
+  echo "🔍 Checking backend files..."
+  cd Auto_QA-backend
+  
+  # Check if backend has lint-staged setup
+  if [ -f "package.json" ] && [ -f ".husky/pre-commit" ] || grep -q "lint-staged" package.json 2>/dev/null; then
+    npx lint-staged
+    
+    if [ $? -ne 0 ]; then
+      echo "❌ Backend checks failed. Commit blocked."
+      exit 1
+    fi
+    
+    # Stage any auto-fixed files
+    git add -u Auto_QA-backend/
+  fi
+  
+  cd ..
+fi
+
+echo "✅ All checks passed!"
+
