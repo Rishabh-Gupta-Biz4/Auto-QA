@@ -14,11 +14,10 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
+      "node scripts/lint-staged-check-fix.js"
     ],
     "*.{json,scss,css,md}": [
-      "prettier --write"
+      "node scripts/lint-staged-check-fix.js"
     ]
   },
   "dependencies": {

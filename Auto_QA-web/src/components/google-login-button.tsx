@@ -17,6 +17,11 @@ export default function GoogleLoginButton({ onError, disabled = false }: GoogleL
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleLogin = () => {
+    // Prevent multiple clicks
+    if (isLoading || disabled) {
+      return;
+    }
+    
     try {
       setIsLoading(true);
       

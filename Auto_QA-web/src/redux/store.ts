@@ -19,7 +19,7 @@ export type AppDispatch = typeof store.dispatch;
 // Subscribe to store changes and sync with localStorage
 store.subscribe(() => {
   const state = store.getState();
-  
+
   // Sync auth state with localStorage
   if (typeof window !== 'undefined') {
     if (state.auth.isAuthenticated && state.auth.user) {
@@ -40,7 +40,10 @@ store.subscribe(() => {
 
     // Sync registration state with localStorage
     if (state.registration.pendingRegistration) {
-      localStorage.setItem('pendingRegistration', JSON.stringify(state.registration.pendingRegistration));
+      localStorage.setItem(
+        'pendingRegistration',
+        JSON.stringify(state.registration.pendingRegistration)
+      );
     } else {
       localStorage.removeItem('pendingRegistration');
     }
@@ -82,4 +85,3 @@ if (typeof window !== 'undefined') {
     store.dispatch(setLoading(false));
   }
 }
-

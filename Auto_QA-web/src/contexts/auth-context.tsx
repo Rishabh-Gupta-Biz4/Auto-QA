@@ -9,7 +9,12 @@
 import { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { login as loginAction, logout as logoutAction, setLoading, initializeAuth } from '@/redux/slices/authSlice';
+import {
+  login as loginAction,
+  logout as logoutAction,
+  setLoading,
+  initializeAuth,
+} from '@/redux/slices/authSlice';
 import { secureStorage, STORAGE_KEYS } from '@/utils/secure-storage';
 
 interface User {
@@ -26,6 +31,13 @@ interface AuthContextType {
   logout: () => void;
 }
 
+type StoredAuthState = {
+  user: User | null;
+  token: string | null;
+  refreshToken: string | null;
+  isAuthenticated: boolean;
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
@@ -35,26 +47,31 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  
+
   // Get auth state from Redux
   const { user, isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
 
   // Initialize auth state on mount from encrypted storage
   useEffect(() => {
     try {
-      const stored = typeof window !== 'undefined' ? secureStorage.get<any>(STORAGE_KEYS.authState) : null;
+      const stored =
+        typeof window !== 'undefined'
+          ? secureStorage.get<StoredAuthState>(STORAGE_KEYS.authState)
+          : null;
       if (stored) {
         const parsed = stored;
-        dispatch(initializeAuth({
-          user: parsed.user ?? null,
-          token: parsed.token ?? null,
-          refreshToken: parsed.refreshToken ?? null,
-          isAuthenticated: Boolean(parsed.isAuthenticated),
-          isLoading: false,
-        }));
+        dispatch(
+          initializeAuth({
+            user: parsed.user ?? null,
+            token: parsed.token ?? null,
+            refreshToken: parsed.refreshToken ?? null,
+            isAuthenticated: Boolean(parsed.isAuthenticated),
+            isLoading: false,
+          })
+        );
         return;
       }
-    } catch (_) {
+    } catch {
       // ignore corrupt storage and fallback to default
     }
     if (isLoading) {
@@ -78,7 +95,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const userData: User = {
           name: data.data.user.name,
           email: data.data.user.email,
-          plan: data.data.user.role === 'admin' ? 'Premium' : 'Free'
+          plan: data.data.user.role === 'admin' ? 'Premium' : 'Free',
         };
 
         // Align with backend: it returns `token` (no refresh token)
@@ -86,11 +103,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const refreshToken: string = '';
 
         // Dispatch to Redux
-        dispatch(loginAction({
-          user: userData,
-          token: accessToken,
-          refreshToken,
-        }));
+        dispatch(
+          loginAction({
+            user: userData,
+            token: accessToken,
+            refreshToken,
+          })
+        );
 
         // Persist to encrypted storage for session continuity
         secureStorage.set(STORAGE_KEYS.authState, {
@@ -99,10 +118,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           refreshToken,
           isAuthenticated: true,
         });
-        
+
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('Login error:', error);
@@ -123,14 +142,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated,
     isLoading,
     login,
-    logout
+    logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
@@ -149,14 +164,16 @@ export function withAuth<T extends object>(Component: React.ComponentType<T>) {
 
     if (isLoading) {
       return (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh',
-          fontSize: '1.125rem',
-          color: '#64748b'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            fontSize: '1.125rem',
+            color: '#64748b',
+          }}
+        >
           Loading...
         </div>
       );

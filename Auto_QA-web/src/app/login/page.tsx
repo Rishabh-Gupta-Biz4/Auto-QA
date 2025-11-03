@@ -11,32 +11,30 @@ import styles from './login.module.scss';
 export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setError,
-    onSubmit
-  } = useLoginForm();
+  const form = useLoginForm();
+  const { register, formState, onSubmit, isSubmitting } = form;
+  const { errors } = formState || { errors: undefined };
 
   // Redirect to dashboard if already authenticated
   useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-      router.push('/dashboard');
+    if (!authLoading && isAuthenticated) {
+      router.replace('/dashboard');
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Show loading state while checking authentication
-  if (authLoading) {
+  // Show loading state while checking authentication or if already authenticated
+  if (authLoading || isAuthenticated) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        fontSize: '1.125rem',
-        color: '#64748b'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '1.125rem',
+          color: '#64748b',
+        }}
+      >
         Loading...
       </div>
     );
@@ -48,22 +46,31 @@ export default function LoginPage() {
         {/* Logo Section */}
         <div className={styles.logoSection}>
           <div className={styles.logoIcon}>
-            <span className={styles.logoSymbol}>⚡</span>
+            <span className={styles.logoSymbol}>âš¡</span>
           </div>
           <h1 className={styles.logoText}>AUTO-QA</h1>
           <p className={styles.logoSubtext}>Auto QA Testing Platform</p>
         </div>
 
         {/* Login Form */}
-        <form onSubmit={onSubmit} className={styles.loginForm}>
+        <form 
+          onSubmit={(e) => {
+            if (isSubmitting) {
+              e.preventDefault();
+              return;
+            }
+            onSubmit(e);
+          }} 
+          className={styles.loginForm}
+        >
           <div className={styles.formHeader}>
             <h2 className={styles.formTitle}>Welcome back</h2>
             <p className={styles.formSubtitle}>Sign in to your account to continue</p>
           </div>
 
-          {errors.root && (
+          {errors?.root && (
             <div className={styles.errorAlert}>
-              <span className={styles.errorIcon}>⚠️</span>
+              <span className={styles.errorIcon}>âš ï¸</span>
               {errors.root.message}
             </div>
           )}
@@ -76,13 +83,11 @@ export default function LoginPage() {
               type="email"
               id="email"
               {...register('email')}
-              className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
+              className={`${styles.input} ${errors?.email ? styles.inputError : ''}`}
               placeholder="Enter your email"
               disabled={isSubmitting}
             />
-            {errors.email && (
-              <span className={styles.fieldError}>{errors.email.message}</span>
-            )}
+            {errors?.email && <span className={styles.fieldError}>{errors.email.message}</span>}
           </div>
 
           <div className={styles.formGroup}>
@@ -93,11 +98,11 @@ export default function LoginPage() {
               type="password"
               id="password"
               {...register('password')}
-              className={`${styles.input} ${errors.password ? styles.inputError : ''}`}
+              className={`${styles.input} ${errors?.password ? styles.inputError : ''}`}
               placeholder="Enter your password"
               disabled={isSubmitting}
             />
-            {errors.password && (
+            {errors?.password && (
               <span className={styles.fieldError}>{errors.password.message}</span>
             )}
           </div>
@@ -114,16 +119,18 @@ export default function LoginPage() {
             </label>
           </div>
 
-          <button
-            type="submit"
-            className={styles.submitButton}
+          <button 
+            type="submit" 
+            className={styles.submitButton} 
             disabled={isSubmitting}
+            onClick={(e) => {
+              if (isSubmitting) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
           >
-            {isSubmitting ? (
-              <span className={styles.loadingSpinner}>⏳</span>
-            ) : (
-              'Sign in'
-            )}
+            {isSubmitting ? <span className={styles.loadingSpinner}>â³</span> : 'Sign in'}
           </button>
         </form>
 
@@ -140,7 +147,7 @@ export default function LoginPage() {
         {/* Sign Up Link */}
         <div className={styles.signupSection}>
           <p className={styles.signupText}>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className={styles.signupLink}>
               Sign up for free
             </Link>

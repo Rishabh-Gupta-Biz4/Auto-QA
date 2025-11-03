@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { useAppSelector } from "@/redux/hooks";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -15,6 +16,7 @@ interface Project {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
   const token = useAppSelector((state) => state.auth.token); // Get token from Redux
   const [refreshKey, setRefreshKey] = useState(0);
@@ -70,11 +72,15 @@ export default function DashboardPage() {
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+  // Redirect to login if not authenticated (use router to avoid full page reload)
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login');
     }
+  }, [isAuthenticated, isLoading, router]);
+
+  // Don't render content if not authenticated
+  if (!isLoading && !isAuthenticated) {
     return null;
   }
 

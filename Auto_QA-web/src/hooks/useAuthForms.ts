@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { useRef } from 'react';
+import { useState, useRef } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAuth } from '@/contexts/auth-context';
 import { useAppDispatch } from '@/redux/hooks';
@@ -14,7 +14,8 @@ import {
 // Login Form Hook
 export function useLoginForm() {
   const { login } = useAuth();
-  const submittingRef = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   
   const form = useForm<LoginFormData>({
     resolver: yupResolver(loginSchema),
@@ -26,10 +27,13 @@ export function useLoginForm() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    if (submittingRef.current) {
-      return false;
+    // Use ref for immediate check (synchronous), state for UI updates (asynchronous)
+    if (isSubmittingRef.current || isSubmitting) {
+      return;
     }
-    submittingRef.current = true;
+    
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
     try {
       const success = await login(data.email, data.password);
       if (!success) {
@@ -38,28 +42,37 @@ export function useLoginForm() {
           message: 'Invalid email or password'
         });
       }
-      return success;
     } catch (error) {
       form.setError('root', {
         type: 'manual',
         message: 'Login failed. Please try again.'
       });
-      return false;
     } finally {
-      submittingRef.current = false;
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
-  return {
+  // Return form with custom isSubmitting in formState
+  // Use Object.assign to maintain reactivity of formState
+  const formWithState = {
     ...form,
-    onSubmit: form.handleSubmit(onSubmit)
+    formState: {
+      ...form.formState,
+      isSubmitting,
+    },
+    onSubmit: form.handleSubmit(onSubmit),
+    isSubmitting, // Also expose directly for easier access
   };
+  
+  return formWithState;
 }
 
 // Register Form Hook
 export function useRegisterForm(onSuccess?: () => void) {
   const dispatch = useAppDispatch();
-  const submittingRef = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   
   const form = useForm<RegisterFormData>({
     resolver: yupResolver(registerSchema),
@@ -74,10 +87,13 @@ export function useRegisterForm(onSuccess?: () => void) {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
-    if (submittingRef.current) {
-      return { success: false, error: 'Already submitting' };
+    // Use ref for immediate check (synchronous), state for UI updates (asynchronous)
+    if (isSubmittingRef.current || isSubmitting) {
+      return;
     }
-    submittingRef.current = true;
+    
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
     try {
       const response = await fetch('http://localhost:3001/api/v1/auth/register', {
         method: 'POST',
@@ -111,28 +127,35 @@ export function useRegisterForm(onSuccess?: () => void) {
           const params = new URLSearchParams(registrationData);
           window.location.href = `/verify-otp?${params.toString()}`;
         }
-        
-        return { success: true, data: result.data };
       } else {
         form.setError('root', {
           type: 'manual',
           message: result.message || 'Registration failed'
         });
-        return { success: false, error: result.message };
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
       }
     } catch (error) {
       form.setError('root', {
         type: 'manual',
         message: 'Registration failed. Please try again.'
       });
-      return { success: false, error: 'Network error' };
-    } finally {
-      submittingRef.current = false;
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
 
-  return {
+  // Return form with custom isSubmitting in formState
+  // Use Object.assign to maintain reactivity of formState
+  const formWithState = {
     ...form,
-    onSubmit: form.handleSubmit(onSubmit)
+    formState: {
+      ...form.formState,
+      isSubmitting,
+    },
+    onSubmit: form.handleSubmit(onSubmit),
+    isSubmitting, // Also expose directly for easier access
   };
+  
+  return formWithState;
 }

@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Run lint-staged which will check and fix code
+# If any check fails, the commit will be blocked
 npx lint-staged
